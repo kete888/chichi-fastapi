@@ -1,0 +1,43 @@
+# 在 PyCharm 里点左边的绿色三角即可发送
+
+### 首页
+GET http://127.0.0.1:8000/
+Accept: application/json
+
+### 添加菜谱
+POST http://127.0.0.1:8000/add_menu
+Content-Type: application/json
+
+{
+  "name": "回锅肉",
+  "price": 32.5,
+  "description": "肥而不腻"
+}
+
+### 查询单条
+GET http://127.0.0.1:8000/query_menu?menu_id=1
+Accept: application/json
+
+### 查询全部（支持模糊搜索 name）
+GET http://127.0.0.1:8000/query_all_menu
+Accept: application/json
+
+### 模糊搜索
+GET http://127.0.0.1:8000/query_all_menu?name=鸡
+Accept: application/json
+
+### 更新（只传要改的字段）
+PUT http://127.0.0.1:8000/update_menu?menu_id=1
+Content-Type: application/json
+
+{
+  "price": 35
+}
+
+### 删除
+DELETE http://127.0.0.1:8000/delete_menu?menu_id=1
+Accept: application/json
+
+### 随机推荐
+GET http://127.0.0.1:8000/recommend/simple?limit=3
+Accept: application/json

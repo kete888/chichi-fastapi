@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>今天吃啥？</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- 背景视频：把烹饪视频放到 static/video/bg.mp4 即可生效 -->
+  <div class="bg-media" aria-hidden="true">
+    <video id="bg-video" autoplay muted loop playsinline preload="auto" disablepictureinpicture>
+      <source src="/static/video/bg.mp4" type="video/mp4">
+      <source src="/static/video/bg.webm" type="video/webm">
+    </video>
+    <div class="bg-overlay"></div>
+  </div>
+
+  <!-- 没有视频时的动态兜底（缓慢飘动的热气） -->
+  <div class="steam" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+
+  <header class="topbar">
+
+    <!-- 左上角：今日节气 + 今日推荐 -->
+    <button type="button" id="today-card" class="today-card" hidden>
+      <span id="today-img-wrap" class="today-img-wrap"></span>
+      <span class="today-text">
+        <span id="today-term" class="today-term">今日</span>
+        <span id="today-dish" class="today-dish">推荐</span>
+      </span>
+    </button>
+
+    <div class="topbar-center">
+      <h1>今天吃啥？</h1>
+      <span class="sub">今天也要好好吃饭</span>
+    </div>
+
+    <div class="topbar-right">
+      <button type="button" id="btn-logout" class="mini-toggle">退出登录</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+
+      <!-- ========== 左侧：筛选与推荐 ========== -->
+      <aside class="card sidebar" id="controls">
+        <div class="side-head">
+          <span class="section-label">筛选与推荐</span>
+          <button type="button" id="btn-collapse" class="mini-toggle">收起 ▴</button>
+        </div>
+
+        <div class="side-body" id="controls-body">
+
+          <div class="side-block">
+            <span class="side-label">搜索</span>
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+              </svg>
+              <input id="search" type="search" placeholder="搜菜名或描述…" autocomplete="off">
+              <button type="button" id="search-clear" class="search-clear" hidden aria-label="清空搜索">✕</button>
+            </div>
+          </div>
+
+          <div class="side-block">
+            <span class="side-label">今天心情怎么样</span>
+            <div id="moods" class="moods"></div>
+          </div>
+
+          <div class="side-block">
+            <span class="side-label">节气</span>
+            <select id="term-select"></select>
+            <div id="term-foods" class="term-info"></div>
+            <button id="btn-term" type="button" class="ghost side-btn">按节气推荐</button>
+          </div>
+
+          <div class="side-block">
+            <span class="side-label">标签</span>
+            <div id="tag-filter" class="tag-filter">
+              <button type="button" class="chip on" data-tag="">全部</button>
+              <button type="button" class="chip" data-tag="辣">辣</button>
+              <button type="button" class="chip" data-tag="甜">甜</button>
+              <button type="button" class="chip" data-tag="汤">汤</button>
+              <button type="button" class="chip" data-tag="肉">肉</button>
+              <button type="button" class="chip" data-tag="素">素</button>
+              <button type="button" class="chip" data-tag="快">快</button>
+              <button type="button" class="chip" data-tag="清淡">清淡</button>
+            </div>
+          </div>
+
+          <div class="side-block">
+            <span class="side-label">排序</span>
+            <select id="sort">
+              <option value="default">默认排序</option>
+              <option value="price-asc">价格从低到高</option>
+              <option value="price-desc">价格从高到低</option>
+              <option value="name">按名称</option>
+            </select>
+          </div>
+
+          <div class="side-actions">
+            <button id="btn-random" type="button" class="ghost">随机 3 道</button>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- ========== 右侧：列表 ========== -->
+      <section class="card list-card">
+
+        <div class="card-head">
+          <h2>菜谱 <span id="count" class="count"></span></h2>
+          <div class="head-actions">
+            <div id="pager" class="pager"></div>
+            <button id="btn-add" type="button" class="primary">＋ 添加</button>
+          </div>
+        </div>
+
+        <!-- 推荐结果条（心情 / 节气） -->
+        <div id="mood-result" class="result" hidden></div>
+        <div id="term-result" class="result" hidden></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>菜名 / 标签</th>
+                <th class="col-price">价格</th>
+                <th class="col-desc">描述</th>
+                <th class="col-ops">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="credit">
+    背景视频来自 Mixkit · 免费可商用
+  </footer>
+
+  <!-- ===== 添加 / 编辑弹窗 ===== -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h3 id="modal-title">添加菜谱</h3>
+
+      <form id="dish-form">
+        <div class="form-row">
+          <label class="field">
+            <span class="label">菜名</span>
+            <input id="f-name" type="text" required maxlength="50" placeholder="比如：回锅肉">
+          </label>
+          <label class="field narrow">
+            <span class="label">价格（元）</span>
+            <input id="f-price" type="number" min="0" step="0.5" value="0">
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="label">一句话简介</span>
+          <input id="f-desc" type="text" maxlength="200" placeholder="比如：肥而不腻，越吃越香">
+        </label>
+
+        <div class="field">
+          <span class="label">标签（可多选，影响心情推荐）</span>
+          <div id="f-tags" class="tag-picker"></div>
+        </div>
+
+        <label class="field">
+          <span class="label">美食介绍</span>
+          <textarea id="f-intro" rows="3" maxlength="500" placeholder="这道菜的来历、味道特点…"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="label">制作方法（一行一个步骤）</span>
+          <textarea id="f-steps" rows="5" maxlength="2000" placeholder="1. 热锅冷油&#10;2. 下肉片滑散&#10;3. 加豆瓣酱炒香"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="label">做法视频链接（可留空，留空会按菜名去 B 站搜索）</span>
+          <input id="f-video" type="url" maxlength="500" placeholder="https://www.bilibili.com/video/BV...">
+        </label>
+
+        <label class="field">
+          <span class="label">菜品图片地址（可留空）</span>
+          <input id="f-image" type="url" maxlength="500" placeholder="https://.../photo.jpg">
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost" data-close>取消</button>
+          <button type="submit" class="primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== 菜谱详情弹窗 ===== -->
+  <div class="modal" id="detail-modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box detail-box" role="dialog" aria-modal="true">
+      <div class="d-head">
+        <h3 id="d-name"></h3>
+        <span id="d-price" class="d-price"></span>
+      </div>
+      <div id="d-tags" class="d-tags"></div>
+
+      <div id="d-video-box" class="d-video-box" hidden></div>
+
+      <div class="d-actions">
+        <a id="d-video" class="video-link" target="_blank" rel="noopener">▶ 看做法视频</a>
+      </div>
+
+      <p id="d-intro" class="d-intro"></p>
+      <div id="d-steps-wrap">
+        <h4>制作方法</h4>
+        <ol id="d-steps" class="d-steps"></ol>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="ghost" data-close>关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 跟随鼠标的菜品预览 -->
+  <div id="dish-preview" class="dish-preview" aria-hidden="true"></div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
